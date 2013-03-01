@@ -42,6 +42,7 @@ private slots:
     void testState_data();
     void testState();
     void testXhtml();
+    void testAmp();
 };
 
 void tst_QXmppMessage::testBasic_data()
@@ -306,6 +307,23 @@ void tst_QXmppMessage::testXhtml()
     QXmppMessage message;
     parsePacket(message, xml);
     QCOMPARE(message.xhtml(), QLatin1String("<p style=\"font-weight:bold\">hi!</p>"));
+    serializePacket(message, xml);
+}
+
+void tst_QXmppMessage::testAmp()
+{
+    const QByteArray xml("<message type=\"normal\">"
+        "<body>hi!</body>"
+        "<amp status=\"notify\" xmlns=\"http://jabber.org/protocol/amp' to='13323@u1\">"
+        "<rule action=\"notify\" condition=\"deliver\" value=\"stored\"/>"
+        "<rule action=\"notify\" condition=\"deliver\" value=\"none\"/>"
+        "</amp>"
+        "</message>");
+
+    QXmppMessage message;
+    parsePacket(message, xml);
+    QCOMPARE(message.isAmp(), true);
+    // QCOMPARE(message.xhtml(), QLatin1String("<p style=\"font-weight:bold\">hi!</p>"));
     serializePacket(message, xml);
 }
 

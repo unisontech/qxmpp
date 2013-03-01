@@ -30,6 +30,196 @@
 #include "QXmppMessage.h"
 #include "QXmppUtils.h"
 
+// XEP-0079: Advanced Message Processing
+const char* ns_amp = "http://jabber.org/protocol/amp";
+
+static const char* actions_types[] = {
+    "alert",
+    "drop",
+    "error",
+    "notify"
+};
+
+static const char* conditions_types[] = {
+    "deliver",
+    "expire_at",
+    "match_resource"
+};
+
+static const char* values_types[] = {
+    "direct",
+    "forward",
+    "gateway",
+    "none",
+    "stored",
+    "any",
+    "exact",
+    "other"
+};
+
+class QXmppAmpRulePrivate : public QSharedData
+{
+public:
+    QXmppMessage::QXmppAmp::QXmppAmpRule::Actions action;
+    QXmppMessage::QXmppAmp::QXmppAmpRule::Conditions condition;
+    QXmppMessage::QXmppAmp::QXmppAmpRule::Values value;
+    QDateTime expire;
+};
+
+QXmppMessage::QXmppAmp::QXmppAmpRule::QXmppAmpRule(const QXmppMessage::QXmppAmp::QXmppAmpRule &other)
+    : d(other.d)
+{
+}
+
+QXmppMessage::QXmppAmp::QXmppAmpRule::QXmppAmpRule(
+    QXmppMessage::QXmppAmp::QXmppAmpRule::Actions action,
+    QXmppMessage::QXmppAmp::QXmppAmpRule::Conditions condition,
+    QXmppMessage::QXmppAmp::QXmppAmpRule::Values value)
+    : d(new QXmppAmpRulePrivate)
+{
+    d->action = action;
+    d->condition = condition;
+    d->value = value;
+}
+
+QXmppMessage::QXmppAmp::QXmppAmpRule::QXmppAmpRule(
+    QXmppMessage::QXmppAmp::QXmppAmpRule::Actions action,
+    QXmppMessage::QXmppAmp::QXmppAmpRule::Conditions condition,
+    const QDateTime &value)
+    : d(new QXmppAmpRulePrivate)
+{
+    d->action = action;
+    d->condition = condition;
+    d->expire = value;
+}
+
+QXmppMessage::QXmppAmp::QXmppAmpRule::~QXmppAmpRule()
+{
+}
+
+QXmppMessage::QXmppAmp::QXmppAmpRule& QXmppMessage::QXmppAmp::QXmppAmpRule::operator=(const QXmppMessage::QXmppAmp::QXmppAmpRule& other)
+{
+    d = other.d;
+    return *this;
+}
+
+QXmppMessage::QXmppAmp::QXmppAmpRule::Actions QXmppMessage::QXmppAmp::QXmppAmpRule::action() const
+{
+    return d->action;
+}
+
+QXmppMessage::QXmppAmp::QXmppAmpRule::Conditions QXmppMessage::QXmppAmp::QXmppAmpRule::condition() const
+{
+    return d->condition;
+}
+
+QXmppMessage::QXmppAmp::QXmppAmpRule::Values QXmppMessage::QXmppAmp::QXmppAmpRule::value() const
+{
+    return d->value;
+}
+
+QDateTime QXmppMessage::QXmppAmp::QXmppAmpRule::expireAt() const
+{
+    return d->expire;
+}
+
+class QXmppAmpPrivate : public QSharedData
+{
+public:
+    QList <QXmppMessage::QXmppAmp::QXmppAmpRule> rules;
+    QXmppMessage::QXmppAmp::QXmppAmpRule::Actions status;
+    bool isStatus;
+    QString from;
+    QString to;
+    bool perHop;
+};
+
+QXmppMessage::QXmppAmp::QXmppAmp()
+    : d(new QXmppAmpPrivate)
+{
+    d->isStatus = false;
+    d->perHop = false;
+}
+
+QXmppMessage::QXmppAmp::QXmppAmp(const QList<QXmppMessage::QXmppAmp::QXmppAmpRule> &rules)
+    : d(new QXmppAmpPrivate)
+{
+    setRules(rules);
+    d->isStatus = false;
+    d->perHop = false;
+}
+
+QXmppMessage::QXmppAmp::QXmppAmp(const QXmppMessage::QXmppAmp &other)
+    : d(other.d)
+{
+}
+
+QXmppMessage::QXmppAmp::~QXmppAmp()
+{
+}
+
+QXmppMessage::QXmppAmp &QXmppMessage::QXmppAmp::operator=(const QXmppMessage::QXmppAmp &other)
+{
+    d = other.d;
+    return *this;
+}
+
+void QXmppMessage::QXmppAmp::setRules(const QList<QXmppMessage::QXmppAmp::QXmppAmpRule> &rules)
+{
+    d->rules = rules;
+}
+
+QList<QXmppMessage::QXmppAmp::QXmppAmpRule> QXmppMessage::QXmppAmp::rules() const
+{
+    return d->rules;
+}
+
+bool QXmppMessage::QXmppAmp::isStatus() const
+{
+    return d->isStatus;
+}
+
+void QXmppMessage::QXmppAmp::setStatus(QXmppMessage::QXmppAmp::QXmppAmpRule::Actions status)
+{
+    d->status = status;
+    d->isStatus = true;
+}
+
+QXmppMessage::QXmppAmp::QXmppAmpRule::Actions QXmppMessage::QXmppAmp::status() const
+{
+    return d->status;
+}
+
+void QXmppMessage::QXmppAmp::setTo(const QString &to)
+{
+    d->to = to;
+}
+
+QString QXmppMessage::QXmppAmp::to() const
+{
+    return d->to;
+}
+
+void QXmppMessage::QXmppAmp::setFrom(const QString &from)
+{
+    d->from = from;
+}
+
+QString QXmppMessage::QXmppAmp::from() const
+{
+    return d->from;
+}
+
+void QXmppMessage::QXmppAmp::setPerHop(bool perHop)
+{
+    d->perHop = perHop;
+}
+
+bool QXmppMessage::QXmppAmp::perHop() const
+{
+    return d->perHop;
+}
+
 static const char* chat_states[] = {
     "",
     "active",
@@ -71,6 +261,10 @@ public:
     // XEP-0071: XHTML-IM
     QString xhtml;
 
+    // XEP-0079: Advanced Message Processing
+    bool isAmp;
+    QXmppMessage::QXmppAmp amp;
+
     // Request message receipt as per XEP-0184.
     QString receiptId;
     bool receiptRequested;
@@ -91,6 +285,7 @@ public:
 QXmppMessage::QXmppMessage(const QString& from, const QString& to, const
                          QString& body, const QString& thread)
     : QXmppStanza(from, to)
+    , QXmppLoggable()
     , d(new QXmppMessagePrivate)
 {
     d->type = Chat;
@@ -100,12 +295,14 @@ QXmppMessage::QXmppMessage(const QString& from, const QString& to, const
     d->body = body;
     d->thread = thread;
     d->receiptRequested = false;
+    d->isAmp = false;
 }
 
 /// Constructs a copy of \a other.
 
 QXmppMessage::QXmppMessage(const QXmppMessage &other)
     : QXmppStanza(other)
+    , QXmppLoggable()
     , d(other.d)
 {
 }
@@ -342,6 +539,22 @@ void QXmppMessage::setXhtml(const QString &xhtml)
     d->xhtml = xhtml;
 }
 
+bool QXmppMessage::isAmp() const
+{
+    return d->isAmp;
+}
+
+QXmppMessage::QXmppAmp QXmppMessage::amp() const
+{
+    return d->amp;
+}
+
+void QXmppMessage::setAmp(const QXmppAmp &amp)
+{
+    d->amp = amp;
+    d->isAmp = true;
+}
+
 /// \cond
 void QXmppMessage::parse(const QDomElement &element)
 {
@@ -384,6 +597,112 @@ void QXmppMessage::parse(const QDomElement &element)
             d->xhtml.replace(" xmlns=\"http://www.w3.org/1999/xhtml\"", "");
             d->xhtml.replace("</body>", "");
             d->xhtml = d->xhtml.trimmed();
+        }
+    }
+
+    // XEP-0079: Advanced Message Processing
+    QDomElement ampElement = element.firstChildElement("amp");
+    if (!ampElement.isNull() && ampElement.namespaceURI() == ns_amp) {
+        QList<QXmppMessage::QXmppAmp::QXmppAmpRule> rules;
+        for (QDomElement ruleElement = ampElement.firstChildElement("rule");
+            !ruleElement.isNull();
+            ruleElement = ruleElement.nextSiblingElement("rule"))
+        {
+
+            QString attributeAction = ruleElement.attribute("action");
+            if (attributeAction.isEmpty()) {
+                warning("QXmppMessage : element 'rule' missing required attribute 'action'");
+                continue;
+            }
+            QString attributeCondition = ruleElement.attribute("condition");
+            if (attributeCondition.isEmpty()) {
+                warning("QXmppMessage : element 'rule' missing required attribute 'condition'");
+                continue;
+            }
+            QString attributeValue = ruleElement.attribute("value");
+            if (attributeValue.isEmpty()) {
+                warning("QXmppMessage : element 'rule' missing required attribute 'value'");
+                continue;
+            }
+
+            QXmppMessage::QXmppAmp::QXmppAmpRule::Actions action;
+            if (attributeAction == actions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::alert]) {
+                action = QXmppMessage::QXmppAmp::QXmppAmpRule::alert;
+            } else if (attributeAction == actions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::drop]) {
+                action = QXmppMessage::QXmppAmp::QXmppAmpRule::drop;
+            } else if (attributeAction == actions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::error]) {
+                action = QXmppMessage::QXmppAmp::QXmppAmpRule::error;
+            } else if (attributeAction == actions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::notify]) {
+                action = QXmppMessage::QXmppAmp::QXmppAmpRule::notify;
+            } else {
+                warning("QXmppMessage : element 'rule' invalid combination");
+                continue;
+            }
+
+            QXmppMessage::QXmppAmp::QXmppAmpRule::Conditions condition;
+            if (attributeCondition == conditions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::deliver]) {
+                condition = QXmppMessage::QXmppAmp::QXmppAmpRule::deliver;
+                QXmppMessage::QXmppAmp::QXmppAmpRule::Values value;
+                if (attributeValue == values_types[QXmppMessage::QXmppAmp::QXmppAmpRule::direct]) {
+                    value = QXmppMessage::QXmppAmp::QXmppAmpRule::direct;
+                } else if (attributeValue == values_types[QXmppMessage::QXmppAmp::QXmppAmpRule::forward]) {
+                    value = QXmppMessage::QXmppAmp::QXmppAmpRule::forward;
+                } else if (attributeValue == values_types[QXmppMessage::QXmppAmp::QXmppAmpRule::gateway]) {
+                    value = QXmppMessage::QXmppAmp::QXmppAmpRule::gateway;
+                } else if (attributeValue == values_types[QXmppMessage::QXmppAmp::QXmppAmpRule::none]) {
+                    value = QXmppMessage::QXmppAmp::QXmppAmpRule::none;
+                } else if (attributeValue == values_types[QXmppMessage::QXmppAmp::QXmppAmpRule::stored]) {
+                    value = QXmppMessage::QXmppAmp::QXmppAmpRule::stored;
+                } else {
+                    warning("QXmppMessage : element 'rule' invalid combination");
+                    continue;
+                }
+                rules.append(QXmppMessage::QXmppAmp::QXmppAmpRule(action, condition, value));
+            } else if (attributeCondition == conditions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::expire_at]) {
+                condition = QXmppMessage::QXmppAmp::QXmppAmpRule::expire_at;
+                QDateTime value = QDateTime::fromString(attributeValue, Qt::ISODate);
+                if (!value.isValid()) {
+                    warning("QXmppMessage : element 'rule' invalid attribute 'value', MUST be a DateTime");
+                    continue;
+                }
+                rules.append(QXmppMessage::QXmppAmp::QXmppAmpRule(action, condition, value));
+            } else if (attributeCondition == conditions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::match_resource]) {
+                condition = QXmppMessage::QXmppAmp::QXmppAmpRule::match_resource;
+                QXmppMessage::QXmppAmp::QXmppAmpRule::Values value;
+                if (attributeValue == values_types[QXmppMessage::QXmppAmp::QXmppAmpRule::any]) {
+                    value = QXmppMessage::QXmppAmp::QXmppAmpRule::any;
+                } else if (attributeValue == values_types[QXmppMessage::QXmppAmp::QXmppAmpRule::exact]) {
+                    value = QXmppMessage::QXmppAmp::QXmppAmpRule::exact;
+                } else if (attributeValue == values_types[QXmppMessage::QXmppAmp::QXmppAmpRule::other]) {
+                    value = QXmppMessage::QXmppAmp::QXmppAmpRule::other;
+                } else {
+                    warning("QXmppMessage : element 'rule' invalid combination");
+                    continue;
+                }
+                rules.append(QXmppMessage::QXmppAmp::QXmppAmpRule(action, condition, value));
+            } else {
+                warning("QXmppMessage : element 'rule' invalid attribute 'condition'");
+                continue;
+            }
+        }
+        if (rules.count()) {
+            d->isAmp = true;
+            d->amp.setRules(rules);
+            QString attributeAction = ampElement.attribute("status");
+            if (!attributeAction.isEmpty()) {
+                if (attributeAction == actions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::alert]) {
+                    d->amp.setStatus(QXmppMessage::QXmppAmp::QXmppAmpRule::alert);
+                } else if (attributeAction == actions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::drop]) {
+                    d->amp.setStatus(QXmppMessage::QXmppAmp::QXmppAmpRule::drop);
+                } else if (attributeAction == actions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::error]) {
+                    d->amp.setStatus(QXmppMessage::QXmppAmp::QXmppAmpRule::error);
+                } else if (attributeAction == actions_types[QXmppMessage::QXmppAmp::QXmppAmpRule::notify]) {
+                    d->amp.setStatus(QXmppMessage::QXmppAmp::QXmppAmpRule::notify);
+                }
+            }
+            d->amp.setTo(ampElement.attribute("to"));
+            d->amp.setFrom(ampElement.attribute("from"));
+            d->amp.setPerHop(ampElement.attribute("per-hop").isEmpty() ? false : true);
         }
     }
 
@@ -470,6 +789,48 @@ void QXmppMessage::toXml(QXmlStreamWriter *xmlWriter) const
         xmlWriter->writeCharacters("");
         xmlWriter->device()->write(d->xhtml.toUtf8());
         xmlWriter->writeEndElement();
+        xmlWriter->writeEndElement();
+    }
+
+    // XEP-0079: Advanced Message Processing
+    if (d->isAmp)
+    {
+        xmlWriter->writeStartElement("amp");
+        xmlWriter->writeAttribute("xmlns", ns_amp);
+        QString from = d->amp.from();
+        if (!from.isEmpty())
+        {
+            helperToXmlAddAttribute(xmlWriter, "from", from);
+        }
+        QString to = d->amp.to();
+        if (!to.isEmpty())
+        {
+            helperToXmlAddAttribute(xmlWriter, "to", to);
+        }
+        bool perHop = d->amp.perHop();
+        if (perHop)
+        {
+            helperToXmlAddAttribute(xmlWriter, "per-hop", "true");
+        }
+        if (d->amp.isStatus())
+        {
+            helperToXmlAddAttribute(xmlWriter, "status", actions_types[d->amp.status()]);
+        }
+        Q_FOREACH(const QXmppAmp::QXmppAmpRule &rule, d->amp.rules())
+        {
+            xmlWriter->writeStartElement("rule");
+            xmlWriter->writeAttribute("action", actions_types[rule.action()]);
+            xmlWriter->writeAttribute("condition", conditions_types[rule.condition()]);
+            if (rule.condition() == QXmppMessage::QXmppAmp::QXmppAmpRule::deliver
+                || rule.condition() == QXmppMessage::QXmppAmp::QXmppAmpRule::match_resource)
+            {
+                xmlWriter->writeAttribute("value", values_types[rule.value()]);
+            }
+            else {
+                xmlWriter->writeAttribute("value", rule.expireAt().toString(Qt::ISODate));
+            }
+            xmlWriter->writeEndElement();
+        }
         xmlWriter->writeEndElement();
     }
 

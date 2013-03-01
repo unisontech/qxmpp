@@ -26,18 +26,101 @@
 #define QXMPPMESSAGE_H
 
 #include <QDateTime>
+#include "QXmppLogger.h"
 #include "QXmppStanza.h"
 
 class QXmppMessagePrivate;
+class QXmppAmpPrivate;
+class QXmppAmpRulePrivate;
 
 /// \brief The QXmppMessage class represents an XMPP message.
 ///
 /// \ingroup Stanzas
 ///
 
-class QXMPP_EXPORT QXmppMessage : public QXmppStanza
+class QXMPP_EXPORT QXmppMessage : public QXmppStanza, public QXmppLoggable
 {
 public:
+    // XEP-0079: Advanced Message Processing
+    class QXMPP_EXPORT QXmppAmp
+    {
+    public:
+        class QXMPP_EXPORT QXmppAmpRule
+        {
+        public:
+            enum Actions
+            {
+                alert = 0,
+                drop,
+                error,
+                notify
+            };
+            enum Conditions
+            {
+                deliver = 0,
+                expire_at,
+                match_resource
+            };
+            enum Values
+            {
+                direct = 0,
+                forward,
+                gateway,
+                none,
+                stored,
+                any,
+                exact,
+                other
+            };
+
+            QXmppAmpRule();
+            QXmppAmpRule(const QXmppMessage::QXmppAmp::QXmppAmpRule &other);
+            QXmppAmpRule(QXmppMessage::QXmppAmp::QXmppAmpRule::Actions action,
+                QXmppMessage::QXmppAmp::QXmppAmpRule::Conditions condition,
+                QXmppMessage::QXmppAmp::QXmppAmpRule::Values value);
+            QXmppAmpRule(QXmppMessage::QXmppAmp::QXmppAmpRule::Actions action,
+                QXmppMessage::QXmppAmp::QXmppAmpRule::Conditions condition,
+                const QDateTime &value);
+            ~QXmppAmpRule();
+
+            QXmppMessage::QXmppAmp::QXmppAmpRule& operator=(const QXmppMessage::QXmppAmp::QXmppAmpRule& other);
+
+            QXmppMessage::QXmppAmp::QXmppAmpRule::Actions action() const;
+            QXmppMessage::QXmppAmp::QXmppAmpRule::Conditions condition() const;
+            QXmppMessage::QXmppAmp::QXmppAmpRule::Values value() const;
+            QDateTime expireAt() const;
+
+        private:
+            QSharedDataPointer<QXmppAmpRulePrivate> d;
+        };
+
+        QXmppAmp();
+        QXmppAmp(const QXmppMessage::QXmppAmp &other);
+        QXmppAmp(const QList<QXmppMessage::QXmppAmp::QXmppAmpRule> &rules);
+        ~QXmppAmp();
+
+        QXmppMessage::QXmppAmp& operator=(const QXmppMessage::QXmppAmp& other);
+
+        void setRules(const QList<QXmppMessage::QXmppAmp::QXmppAmpRule> &rules);
+        QList<QXmppMessage::QXmppAmp::QXmppAmpRule> rules() const;
+
+        bool isStatus() const;
+        void setStatus(QXmppMessage::QXmppAmp::QXmppAmpRule::Actions status);
+        QXmppMessage::QXmppAmp::QXmppAmpRule::Actions status() const;
+
+        void setTo(const QString &);
+        QString to() const;
+
+        void setFrom(const QString &);
+        QString from() const;
+
+        void setPerHop(bool);
+        bool perHop() const;
+
+    private:
+        QSharedDataPointer<QXmppAmpPrivate> d;
+    };
+
     /// This enum described a message type.
     enum Type
     {
@@ -105,6 +188,11 @@ public:
 
     QString xhtml() const;
     void setXhtml(const QString &xhtml);
+
+    // XEP-0079: Advanced Message Processing
+    bool isAmp() const;
+    QXmppMessage::QXmppAmp amp() const;
+    void setAmp(const QXmppAmp &);
 
     /// \cond
     void parse(const QDomElement &element);
