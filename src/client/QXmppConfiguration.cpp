@@ -49,6 +49,10 @@ public:
     // Windows Live
     QString windowsLiveAccessToken;
 
+    // x-signed-cookie
+    QString un_ss_sign;
+    QString un_ss_data;
+
     // default is false
     bool autoAcceptSubscriptions;
     // default is true
@@ -370,6 +374,26 @@ QString QXmppConfiguration::windowsLiveAccessToken() const
 void QXmppConfiguration::setWindowsLiveAccessToken(const QString& accessToken)
 {
     d->windowsLiveAccessToken = accessToken;
+}
+
+QString QXmppConfiguration::xSignedCookieSign() const
+{
+    return d->un_ss_sign;
+}
+
+void QXmppConfiguration::setxSignedCookieSign(const QString &new_un_ss_sign)
+{
+    d->un_ss_sign = new_un_ss_sign;
+}
+
+QString QXmppConfiguration::xSignedCookieData() const
+{
+    return d->un_ss_data;
+}
+
+void QXmppConfiguration::setxSignedCookieData(const QString &new_un_ss_data)
+{
+    d->un_ss_data = new_un_ss_data;
 }
 
 /// Returns the auto-accept-subscriptions-request configuration.

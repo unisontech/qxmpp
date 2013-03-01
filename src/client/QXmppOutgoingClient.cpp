@@ -413,7 +413,13 @@ void QXmppOutgoingClient::handleStanza(const QDomElement &nodeRecv)
             } else if (d->saslClient->mechanism() == "X-OAUTH2") {
                 d->saslClient->setUsername(configuration().user());
                 d->saslClient->setPassword(configuration().googleAccessToken());
-            } else {
+            } else if (d->saslClient->mechanism() == "X-SIGNED-COOKIE") {
+                d->saslClient->setUsername(configuration().user());
+                d->saslClient->setPassword(configuration().password());
+                d->saslClient->setxSignedCookieData(configuration().xSignedCookieData());
+                d->saslClient->setxSignedCookieSign(configuration().xSignedCookieSign());
+            }
+            else {
                 d->saslClient->setUsername(configuration().user());
                 d->saslClient->setPassword(configuration().password());
             }

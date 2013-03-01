@@ -217,6 +217,8 @@ public:
     QString serviceType;
     QString username;
     QString password;
+    QString un_ss_sign;
+    QString un_ss_data;
 };
 
 QXmppSaslClient::QXmppSaslClient(QObject *parent)
@@ -234,7 +236,7 @@ QXmppSaslClient::~QXmppSaslClient()
 
 QStringList QXmppSaslClient::availableMechanisms()
 {
-    return QStringList() << "PLAIN" << "DIGEST-MD5" << "ANONYMOUS" << "X-FACEBOOK-PLATFORM" << "X-MESSENGER-OAUTH2" << "X-OAUTH2";
+    return QStringList() << "PLAIN" << "DIGEST-MD5" << "ANONYMOUS" << "X-FACEBOOK-PLATFORM" << "X-MESSENGER-OAUTH2" << "X-OAUTH2" << "X-SIGNED-COOKIE";
 }
 
 /// Creates an SASL client for the given mechanism.
@@ -253,6 +255,8 @@ QXmppSaslClient* QXmppSaslClient::create(const QString &mechanism, QObject *pare
         return new QXmppSaslClientWindowsLive(parent);
     } else if (mechanism == "X-OAUTH2") {
         return new QXmppSaslClientGoogle(parent);
+    } else if (mechanism == "X-SIGNED-COOKIE") {
+        return new QXmppSaslClientXSignedCookie(parent);
     } else {
         return 0;
     }
@@ -312,6 +316,26 @@ QString QXmppSaslClient::password() const
 void QXmppSaslClient::setPassword(const QString &password)
 {
     d->password = password;
+}
+
+QString QXmppSaslClient::xSignedCookieSign() const
+{
+    return d->un_ss_sign;
+}
+
+void QXmppSaslClient::setxSignedCookieSign(const QString &new_un_ss_sign)
+{
+    d->un_ss_sign = new_un_ss_sign;
+}
+
+QString QXmppSaslClient::xSignedCookieData() const
+{
+    return d->un_ss_data;
+}
+
+void QXmppSaslClient::setxSignedCookieData(const QString &new_un_ss_data)
+{
+    d->un_ss_data = new_un_ss_data;
 }
 
 QXmppSaslClientAnonymous::QXmppSaslClientAnonymous(QObject *parent)
@@ -544,6 +568,33 @@ bool QXmppSaslClientWindowsLive::respond(const QByteArray &challenge, QByteArray
         return true;
     } else {
         warning("QXmppSaslClientWindowsLive : Invalid step");
+        return false;
+    }
+}
+
+QXmppSaslClientXSignedCookie::QXmppSaslClientXSignedCookie(QObject *parent)
+    : QXmppSaslClient(parent)
+    , m_step(0)
+{
+}
+
+QString QXmppSaslClientXSignedCookie::mechanism() const
+{
+    return "X-SIGNED-COOKIE";
+}
+
+#include <QDebug>
+bool QXmppSaslClientXSignedCookie::respond(const QByteArray &challenge, QByteArray &response)
+{
+    Q_UNUSED(challenge);
+
+    if (m_step == 0) {
+        QString ss = "signed-data=\"" + xSignedCookieData() + "\", sign=\"" + xSignedCookieSign() + "\"";
+        response = ss.toLatin1();
+        m_step++;
+        return true;
+    } else {
+        warning("QXmppSaslClientXSignedCookie : Invalid step = " + QString::number(m_step));
         return false;
     }
 }

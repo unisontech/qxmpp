@@ -113,6 +113,12 @@ public:
     QString windowsLiveAccessToken() const;
     void setWindowsLiveAccessToken(const QString &accessToken);
 
+    QString xSignedCookieSign() const;
+    void setxSignedCookieSign(const QString &new_un_ss_sign);
+
+    QString xSignedCookieData() const;
+    void setxSignedCookieData(const QString &new_un_ss_data);
+
     bool autoAcceptSubscriptions() const;
     void setAutoAcceptSubscriptions(bool);
 

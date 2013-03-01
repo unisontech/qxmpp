@@ -66,6 +66,12 @@ public:
     QString password() const;
     void setPassword(const QString &password);
 
+    QString xSignedCookieSign() const;
+    void setxSignedCookieSign(const QString &new_un_ss_sign);
+
+    QString xSignedCookieData() const;
+    void setxSignedCookieData(const QString &new_un_ss_data);
+
     virtual QString mechanism() const = 0;
     virtual bool respond(const QByteArray &challenge, QByteArray &response) = 0;
 
@@ -266,6 +272,17 @@ class QXmppSaslClientWindowsLive : public QXmppSaslClient
 {
 public:
     QXmppSaslClientWindowsLive(QObject *parent = 0);
+    QString mechanism() const;
+    bool respond(const QByteArray &challenge, QByteArray &response);
+
+private:
+    int m_step;
+};
+
+class QXmppSaslClientXSignedCookie : public QXmppSaslClient
+{
+public:
+    QXmppSaslClientXSignedCookie(QObject *parent = 0);
     QString mechanism() const;
     bool respond(const QByteArray &challenge, QByteArray &response);
 
