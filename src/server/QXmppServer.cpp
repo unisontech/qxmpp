@@ -865,6 +865,27 @@ QXmppSslServer::~QXmppSslServer()
     delete d;
 }
 
+#if QT_VERSION >= 0x050000
+
+void QXmppSslServer::incomingConnection(qintptr socketDescriptor)
+{
+    QSslSocket *socket = new QSslSocket;
+    if (!socket->setSocketDescriptor(socketDescriptor)) {
+        delete socket;
+        return;
+    }
+
+    if (!d->localCertificate.isNull() && !d->privateKey.isNull()) {
+        socket->setProtocol(QSsl::AnyProtocol);
+        socket->addCaCertificates(d->caCertificates);
+        socket->setLocalCertificate(d->localCertificate);
+        socket->setPrivateKey(d->privateKey);
+    }
+    emit newConnection(socket);
+}
+
+#else if QT_VERSION < 0x050000
+
 void QXmppSslServer::incomingConnection(int socketDescriptor)
 {
     QSslSocket *socket = new QSslSocket;
@@ -881,6 +902,8 @@ void QXmppSslServer::incomingConnection(int socketDescriptor)
     }
     emit newConnection(socket);
 }
+
+#endif //QT_VERSION >= 0x050000
 
 /// Adds the given certificates to the CA certificate database to be used
 /// for incoming connnections.

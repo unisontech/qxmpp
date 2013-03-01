@@ -112,12 +112,25 @@ QXmppSocksClient::QXmppSocksClient(const QString &proxyHost, quint16 proxyPort, 
     connect(this, SIGNAL(readyRead()), this, SLOT(slotReadyRead()));
 }
 
-void QXmppSocksClient::connectToHost(const QString &hostName, quint16 hostPort)
+#if (QT_VERSION >= 0x050000)
+
+void QXmppSocksClient::connectToHost(const QString &hostName, quint16 hostPort, OpenMode mode, NetworkLayerProtocol protocol)
 {
     m_hostName = hostName;
     m_hostPort = hostPort;
-    QTcpSocket::connectToHost(m_proxyHost, m_proxyPort);
+    QTcpSocket::connectToHost(m_proxyHost, m_proxyPort, mode, protocol);
 }
+
+#elif (QT_VERSION < 0x050000)
+
+void QXmppSocksClient::connectToHost(const QString &hostName, quint16 hostPort, QIODevice::OpenMode mode)
+{
+    m_hostName = hostName;
+    m_hostPort = hostPort;
+    QTcpSocket::connectToHost(m_proxyHost, m_proxyPort, mode);
+}
+
+#endif //QT_VERSION >= 0x050000
 
 void QXmppSocksClient::slotConnected()
 {

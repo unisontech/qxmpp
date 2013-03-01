@@ -37,7 +37,12 @@ class QXMPP_EXPORT QXmppSocksClient : public QTcpSocket
 
 public:
     QXmppSocksClient(const QString &proxyHost, quint16 proxyPort, QObject *parent=0);
-    void connectToHost(const QString &hostName, quint16 hostPort);
+
+#if (QT_VERSION >= 0x050000)
+    void connectToHost(const QString &hostName, quint16 hostPort, OpenMode mode = ReadWrite, NetworkLayerProtocol protocol = AnyIPProtocol);
+#elif (QT_VERSION < 0x050000)
+    void connectToHost(const QString &hostName, quint16 hostPort, OpenMode mode = ReadWrite);
+#endif //QT_VERSION >= 0x050000
 
 signals:
     void ready();
