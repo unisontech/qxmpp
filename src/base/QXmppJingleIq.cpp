@@ -642,7 +642,7 @@ QXmppJingleCandidate::Type QXmppJingleCandidate::typeFromString(const QString &t
     else if (typeStr == "relay")
         type = RelayedType;
     else {
-        qWarning() << "Unknown candidate type" << typeStr;
+        qWarning("Unknown candidate type %s", typeStr.toUtf8().data());
         if (ok)
             *ok = false;
         return HostType;

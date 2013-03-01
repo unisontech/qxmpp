@@ -25,7 +25,7 @@
 #define QXMPPSTUN_H
 
 #include <QObject>
-
+#include <QSet>
 #include "QXmppLogger.h"
 #include "QXmppJingleIq.h"
 

@@ -23,7 +23,7 @@
 
 #include <QDomElement>
 #include <QMap>
-
+#include <QSet>
 #include "QXmppClient.h"
 #include "QXmppConstants.h"
 #include "QXmppDiscoveryManager.h"
