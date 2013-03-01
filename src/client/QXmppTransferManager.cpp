@@ -750,6 +750,7 @@ QXmppTransferManagerPrivate::QXmppTransferManagerPrivate(QXmppTransferManager *q
     , supportedMethods(QXmppTransferJob::AnyMethod)
     , q(qq)
 {
+    Q_UNUSED(q);
 }
 
 QXmppTransferJob* QXmppTransferManagerPrivate::getJobByRequestId(QXmppTransferJob::Direction direction, const QString &jid, const QString &id)

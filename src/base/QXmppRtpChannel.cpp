@@ -285,6 +285,7 @@ QXmppRtpAudioChannelPrivate::QXmppRtpAudioChannelPrivate(QXmppRtpAudioChannel *q
 {
     qRegisterMetaType<QXmppRtpAudioChannel::Tone>("QXmppRtpAudioChannel::Tone");
     outgoingSsrc = qrand();
+    Q_UNUSED(q);
 }
 
 /// Returns the audio codec for the given payload type.

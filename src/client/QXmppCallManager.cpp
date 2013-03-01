@@ -735,6 +735,7 @@ QXmppCallManagerPrivate::QXmppCallManagerPrivate(QXmppCallManager *qq)
     turnPort(0),
     q(qq)
 {
+    Q_UNUSED(q);
 }
 
 QXmppCall *QXmppCallManagerPrivate::findCall(const QString &sid) const

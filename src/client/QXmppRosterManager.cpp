@@ -55,6 +55,7 @@ QXmppRosterManagerPrivate::QXmppRosterManagerPrivate(QXmppRosterManager *qq)
     : isRosterReceived(false),
     q(qq)
 {
+    Q_UNUSED(q);
 }
 
 /// Constructs a roster manager.

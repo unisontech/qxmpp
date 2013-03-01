@@ -124,6 +124,7 @@ QXmppLoggerPrivate::QXmppLoggerPrivate(QXmppLogger *qq)
     messageTypes(QXmppLogger::AnyMessage),
     q(qq)
 {
+    Q_UNUSED(q);
 }
 
 /// Constructs a new QXmppLogger.
