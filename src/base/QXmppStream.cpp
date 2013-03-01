@@ -51,10 +51,13 @@ public:
 
     // stream state
     QByteArray streamStart;
+
+    bool requireStartEncryption;
 };
 
 QXmppStreamPrivate::QXmppStreamPrivate()
     : socket(0)
+    , requireStartEncryption(false)
 {
 }
 
@@ -141,6 +144,16 @@ bool QXmppStream::sendPacket(const QXmppStanza &packet)
     return sendData(data);
 }
 
+bool QXmppStream::requireStartEncryption()
+{
+    return d->requireStartEncryption;
+}
+
+void QXmppStream::setRequireStartEncryption(bool value)
+{
+    d->requireStartEncryption = value;
+}
+
 /// Returns the QSslSocket used for this stream.
 ///
 
@@ -183,7 +196,11 @@ void QXmppStream::_q_socketConnected()
     info(QString("Socket connected to %1 %2").arg(
         d->socket->peerAddress().toString(),
         QString::number(d->socket->peerPort())));
-    handleStart();
+    if (d->requireStartEncryption) {
+        d->socket->startClientEncryption();
+    } else {
+        handleStart();
+    }
 }
 
 void QXmppStream::_q_socketEncrypted()

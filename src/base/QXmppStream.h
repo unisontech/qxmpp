@@ -49,6 +49,9 @@ public:
     virtual bool isConnected() const;
     bool sendPacket(const QXmppStanza&);
 
+    bool requireStartEncryption();
+    void setRequireStartEncryption(bool);
+
 signals:
     /// This signal is emitted when the stream is connected.
     void connected();

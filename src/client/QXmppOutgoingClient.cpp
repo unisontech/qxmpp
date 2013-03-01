@@ -126,6 +126,9 @@ void QXmppOutgoingClientPrivate::connectToHost(const QString &host, quint16 port
 #endif
 
     // connect to host
+    if (config.streamSecurityMode() == QXmppConfiguration::TLSRequired) {
+        q->setRequireStartEncryption(true);
+    }
     q->socket()->connectToHost(host, port);
 }
 
