@@ -54,7 +54,7 @@ bool QXmppMessageReceiptManager::handleStanza(const QDomElement &stanza)
 
     // Handle receipts and cancel any further processing.
     if (!message.receiptId().isEmpty()) {
-        emit messageDelivered(message.from(), message.receiptId());
+        emit messageDelivered(message);
         return true;
     }
 
@@ -65,10 +65,28 @@ bool QXmppMessageReceiptManager::handleStanza(const QDomElement &stanza)
         QXmppMessage receipt;
         receipt.setTo(message.from());
         receipt.setReceiptId(message.id());
+        // Unison Extention: yet another id
+        receipt.setChatHistoryId(message.chatHistoryId());
         client()->sendPacket(receipt);
     }
 
     // Continue processing.
     return false;
 }
+
+bool QXmppMessageReceiptManager::sendCustomReceipt(const QString& bareJid, const QString& receiptId, const QString& historyId, const QString& deliveryStatus)
+{
+    QXmppMessage receipt;
+    receipt.setTo(bareJid);
+    receipt.setReceiptId(receiptId);
+    receipt.setChatHistoryId(historyId);
+    // TODO: setCustomReceipt(QString)
+    receipt.setReceiptRead(deliveryStatus == "read");
+
+    bool ok = client()->sendPacket(receipt);
+    Q_ASSERT(ok);
+
+    return ok;
+}
+
 /// \endcond

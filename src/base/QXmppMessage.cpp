@@ -25,6 +25,7 @@
 #include <QDomElement>
 #include <QTextStream>
 #include <QXmlStreamWriter>
+#include <QStringList>
 
 #include "QXmppConstants.h"
 #include "QXmppMessage.h"
@@ -32,6 +33,8 @@
 
 // XEP-0079: Advanced Message Processing
 const char* ns_amp = "http://jabber.org/protocol/amp";
+// Unison Extension: Attachments
+const char* ns_attachments = "jabber:info:unison";
 
 static const char* actions_types[] = {
     "alert",
@@ -265,14 +268,24 @@ public:
     bool isAmp;
     QXmppMessage::QXmppAmp amp;
 
+    // Unison Extension: Chat History
+    QString chatHistoryId;
+
     // Request message receipt as per XEP-0184.
     QString receiptId;
     bool receiptRequested;
+    bool receiptReceived;
+    // Unison Extension: custom receipt read
+    bool receiptRead;
 
     // XEP-0249: Direct MUC Invitations
     QString mucInvitationJid;
     QString mucInvitationPassword;
     QString mucInvitationReason;
+
+    // Unison Extension: Attachments
+    QString attachment;
+    QStringList attachments;
 };
 
 /// Constructs a QXmppMessage.
@@ -296,6 +309,9 @@ QXmppMessage::QXmppMessage(const QString& from, const QString& to, const
     d->thread = thread;
     d->receiptRequested = false;
     d->isAmp = false;
+    d->chatHistoryId = "";
+    d->receiptReceived = false;
+    d->receiptRead = false;
 }
 
 /// Constructs a copy of \a other.
@@ -374,6 +390,26 @@ void QXmppMessage::setReceiptRequested(bool requested)
     d->receiptRequested = requested;
     if (requested && id().isEmpty())
         generateAndSetNextId();
+}
+
+bool QXmppMessage::isReceiptReceived() const
+{
+    return d->receiptReceived;
+}
+
+void QXmppMessage::setReceiptReceived(bool received)
+{
+    d->receiptReceived = received;
+}
+
+bool QXmppMessage::isReceiptRead() const
+{
+    return d->receiptRead;
+}
+
+void QXmppMessage::setReceiptRead(bool read)
+{
+    d->receiptRead = read;
 }
 
 /// If this message is a delivery receipt, returns the ID of the
@@ -555,6 +591,36 @@ void QXmppMessage::setAmp(const QXmppAmp &amp)
     d->isAmp = true;
 }
 
+QString QXmppMessage::chatHistoryId() const
+{
+    return d->chatHistoryId;
+}
+
+void QXmppMessage::setChatHistoryId(const QString& id)
+{
+    d->chatHistoryId = id;
+}
+
+QString QXmppMessage::attachment() const
+{
+    return d->attachment;
+}
+
+void QXmppMessage::setAttachment(const QString &value)
+{
+    d->attachment = value;
+}
+
+QStringList QXmppMessage::attachments() const
+{
+    return d->attachments;
+}
+
+void QXmppMessage::setAttachments(const QStringList &value)
+{
+    d->attachments = value;
+}
+
 /// \cond
 void QXmppMessage::parse(const QDomElement &element)
 {
@@ -706,17 +772,31 @@ void QXmppMessage::parse(const QDomElement &element)
         }
     }
 
+    // Unison Extension: Chat History
+    d->chatHistoryId = element.attribute("chat_history_id");
+
     // XEP-0184: Message Delivery Receipts
     QDomElement receivedElement = element.firstChildElement("received");
     if (!receivedElement.isNull() && receivedElement.namespaceURI() == ns_message_receipts) {
         d->receiptId = receivedElement.attribute("id");
+        d->receiptReceived = true;
+    }
 
+    // Unison Extension: custom receipt read
+    QDomElement receiptReadElement = element.firstChildElement("read");
+    if (!receiptReadElement.isNull() && receiptReadElement.namespaceURI() == ns_message_receipts) {
+        d->receiptId = receiptReadElement.attribute("id");
+        d->receiptRead = true;
+    }
+
+    if (receivedElement.isNull() && receiptReadElement.isNull()) {
         // compatibility with old-style XEP
+        d->receiptId = QString();
+    } else {
         if (d->receiptId.isEmpty())
             d->receiptId = id();
-    } else {
-        d->receiptId = QString();
     }
+
     d->receiptRequested = element.firstChildElement("request").namespaceURI() == ns_message_receipts;
 
     // XEP-0203: Delayed Delivery
@@ -730,6 +810,22 @@ void QXmppMessage::parse(const QDomElement &element)
 
     // XEP-0224: Attention
     d->attentionRequested = element.firstChildElement("attention").namespaceURI() == ns_attention;
+
+    // Unison Extension: Attachments
+    d->attachment = element.firstChildElement("attachment").text();
+    QDomElement attachmentsElement = element.firstChildElement("attachments");
+    if (!attachmentsElement.isNull() && attachmentsElement.namespaceURI() == ns_attachments)
+    {
+        QDomElement attachmentElement = attachmentsElement.firstChildElement("attachment");
+        while (!attachmentElement.isNull())
+        {
+            QString id = attachmentElement.attribute("id");
+            if (!id.isEmpty())
+                d->attachments.append(id);
+
+            attachmentElement = attachmentElement.nextSiblingElement("attachment");
+        }
+    }
 
     QXmppElementList extensions;
     QDomElement xElement = element.firstChildElement("x");
@@ -761,6 +857,10 @@ void QXmppMessage::toXml(QXmlStreamWriter *xmlWriter) const
     xmlWriter->writeStartElement("message");
     helperToXmlAddAttribute(xmlWriter, "xml:lang", lang());
     helperToXmlAddAttribute(xmlWriter, "id", id());
+    if (!d->receiptId.isEmpty()) { // send this id only if this message is receipt
+        // Unison Extension: custom id
+        xmlWriter->writeAttribute("chat_history_id", d->chatHistoryId);
+    }
     helperToXmlAddAttribute(xmlWriter, "to", to());
     helperToXmlAddAttribute(xmlWriter, "from", from());
     helperToXmlAddAttribute(xmlWriter, "type", message_types[d->type]);
@@ -856,7 +956,11 @@ void QXmppMessage::toXml(QXmlStreamWriter *xmlWriter) const
 
     // XEP-0184: Message Delivery Receipts
     if (!d->receiptId.isEmpty()) {
-        xmlWriter->writeStartElement("received");
+        // Unison Extension: custom receipt read
+        if (d->receiptRead)
+            xmlWriter->writeStartElement("read");
+        else
+            xmlWriter->writeStartElement("received");
         xmlWriter->writeAttribute("xmlns", ns_message_receipts);
         xmlWriter->writeAttribute("id", d->receiptId);
         xmlWriter->writeEndElement();
@@ -883,6 +987,26 @@ void QXmppMessage::toXml(QXmlStreamWriter *xmlWriter) const
             xmlWriter->writeAttribute("password", d->mucInvitationPassword);
         if (!d->mucInvitationReason.isEmpty())
             xmlWriter->writeAttribute("reason", d->mucInvitationReason);
+        xmlWriter->writeEndElement();
+    }
+
+    // Unison Extension: Attachments
+    if (!d->attachment.isEmpty())
+    {
+        helperToXmlAddTextElement(xmlWriter, "attachment", d->attachment);
+    }
+    if (d->attachments.count())
+    {
+        xmlWriter->writeStartElement("attachments");
+        xmlWriter->writeAttribute("xmlns", ns_attachments);
+        Q_FOREACH(const QString &id, d->attachments)
+        {
+            if (!id.isEmpty()) {
+                xmlWriter->writeStartElement("attachment");
+                xmlWriter->writeAttribute("id", id);
+                xmlWriter->writeEndElement();
+            }
+        }
         xmlWriter->writeEndElement();
     }
 

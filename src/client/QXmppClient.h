@@ -105,7 +105,6 @@ public:
     ~QXmppClient();
 
     bool addExtension(QXmppClientExtension* extension);
-    bool insertExtension(int index, QXmppClientExtension* extension);
     bool removeExtension(QXmppClientExtension* extension);
 
     QList<QXmppClientExtension*> extensions();
@@ -219,7 +218,8 @@ public slots:
                          const QString &password);
     void disconnectFromServer();
     bool sendPacket(const QXmppStanza&);
-    void sendMessage(const QString& bareJid, const QString& message);
+    QStringList sendMessage(const QString& bareJid, const QString& message, const QString& xhtmlMessage = QString(),
+        const QStringList& attachments = QStringList(), const QString& attachment = QString());
 
 private slots:
     void _q_elementReceived(const QDomElement &element, bool &handled);
@@ -230,6 +230,9 @@ private slots:
     void _q_streamError(QXmppClient::Error error);
 
 private:
+    QString _q_sendMessage(const QString& to, const QString& message, const QString& xhtmlMessage,
+        const QStringList& attachments, const QString& attachment);
+
     QXmppClientPrivate * const d;
 };
 

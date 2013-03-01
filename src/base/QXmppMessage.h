@@ -159,6 +159,13 @@ public:
     bool isReceiptRequested() const;
     void setReceiptRequested(bool requested);
 
+    bool isReceiptReceived() const;
+    void setReceiptReceived(bool received);
+
+    // Unison Extension: custom receipt read
+    bool isReceiptRead() const;
+    void setReceiptRead(bool read);
+
     QString mucInvitationJid() const;
     void setMucInvitationJid(const QString &jid);
 
@@ -193,6 +200,16 @@ public:
     bool isAmp() const;
     QXmppMessage::QXmppAmp amp() const;
     void setAmp(const QXmppAmp &);
+
+    // Unison Extension: Chat History
+    QString chatHistoryId() const;
+    void setChatHistoryId(const QString& id);
+
+    // Unison Extension: Attachments
+    QString attachment() const;
+    void setAttachment(const QString &);
+    QStringList attachments() const;
+    void setAttachments(const QStringList &);
 
     /// \cond
     void parse(const QDomElement &element);

@@ -23,6 +23,7 @@
 
 #include <QSslSocket>
 #include <QTimer>
+#include <QUuid>
 
 #include "QXmppClient.h"
 #include "QXmppClientExtension.h"
@@ -54,12 +55,23 @@ public:
     int reconnectionTries;
     QTimer *reconnectionTimer;
 
+    // managers
+    QXmppRosterManager *rosterManager;
+    QXmppVCardManager *vCardManager;
+    QXmppVersionManager *versionManager;
+
     void addProperCapability(QXmppPresence& presence);
     int getNextReconnectTime() const;
+
+    QString nextId() const;
+    static unsigned long long lastId;
+    QString id;
 
 private:
     QXmppClient *q;
 };
+
+unsigned long long QXmppClientPrivate::lastId = 0;
 
 QXmppClientPrivate::QXmppClientPrivate(QXmppClient *qq)
     : clientPresence(QXmppPresence::Available)
@@ -68,6 +80,10 @@ QXmppClientPrivate::QXmppClientPrivate(QXmppClient *qq)
     , receivedConflict(false)
     , reconnectionTries(0)
     , reconnectionTimer(0)
+    , rosterManager(0)
+    , vCardManager(0)
+    , versionManager(0)
+    , id(QUuid::createUuid().toString().mid(1, 8))
     , q(qq)
 {
 }
@@ -92,6 +108,11 @@ int QXmppClientPrivate::getNextReconnectTime() const
         return 40 * 1000;
     else
         return 60 * 1000;
+}
+
+QString QXmppClientPrivate::nextId() const
+{
+    return id + "_" + QString::number(++lastId);
 }
 
 /// \mainpage
@@ -191,9 +212,17 @@ QXmppClient::QXmppClient(QObject *parent)
     // logging
     setLogger(QXmppLogger::getLogger());
 
-    addExtension(new QXmppRosterManager(this));
-    addExtension(new QXmppVCardManager);
-    addExtension(new QXmppVersionManager);
+    // create managers
+    // TODO move manager references to d->extensions
+    d->rosterManager = new QXmppRosterManager(this);
+    addExtension(d->rosterManager);
+
+    d->vCardManager = new QXmppVCardManager;
+    addExtension(d->vCardManager);
+
+    d->versionManager = new QXmppVersionManager;
+    addExtension(d->versionManager);
+
     addExtension(new QXmppEntityTimeManager());
     addExtension(new QXmppDiscoveryManager());
 }
@@ -206,21 +235,11 @@ QXmppClient::~QXmppClient()
     delete d;
 }
 
-/// Registers a new \a extension with the client.
+/// Registers a new extension with the client.
 ///
 /// \param extension
 
 bool QXmppClient::addExtension(QXmppClientExtension* extension)
-{
-    return insertExtension(d->extensions.size(), extension);
-}
-
-/// Registers a new \a extension with the client at the given \a index.
-///
-/// \param index
-/// \param extension
-
-bool QXmppClient::insertExtension(int index, QXmppClientExtension *extension)
 {
     if (d->extensions.contains(extension))
     {
@@ -230,7 +249,7 @@ bool QXmppClient::insertExtension(int index, QXmppClientExtension *extension)
 
     extension->setParent(this);
     extension->setClient(this);
-    d->extensions.insert(index, extension);
+    d->extensions << extension;
     return true;
 }
 
@@ -364,7 +383,7 @@ bool QXmppClient::isConnected() const
 
 QXmppRosterManager& QXmppClient::rosterManager()
 {
-    return *findExtension<QXmppRosterManager>();
+    return *d->rosterManager;
 }
 
 /// Utility function to send message to all the resources associated with the
@@ -374,22 +393,32 @@ QXmppRosterManager& QXmppClient::rosterManager()
 ///
 /// \param bareJid bareJid of the receiving entity
 /// \param message Message string to be sent.
+/// \param message XHTML Message body to be sent. If empty, it will be same as Message.
+///
+/// \return stanzaIds of messages that was sent
 
-void QXmppClient::sendMessage(const QString& bareJid, const QString& message)
+QStringList QXmppClient::sendMessage(const QString& bareJid, const QString& message, const QString& xhtmlMessage,
+    const QStringList& attachments, const QString& attachment)
 {
+    QString xhtml = xhtmlMessage;
+    if (xhtmlMessage.isEmpty())
+        xhtml = message;
+
+    QStringList stanzas;
     QStringList resources = rosterManager().getResources(bareJid);
+
     if(!resources.isEmpty())
     {
         for(int i = 0; i < resources.size(); ++i)
-        {
-            sendPacket(QXmppMessage("", bareJid + "/" + resources.at(i), message));
-        }
+            stanzas.append(_q_sendMessage(QString("%1/%2").arg(bareJid).arg(resources.at(i)), message, xhtml, attachments, attachment));
     }
     else
-    {
-        sendPacket(QXmppMessage("", bareJid, message));
-    }
+        stanzas.append(_q_sendMessage(bareJid, message, xhtml, attachments, attachment));
+
+    return stanzas;
 }
+
+///
 
 /// Returns the client's current state.
 
@@ -470,7 +499,7 @@ QXmppStanza::Error::Condition QXmppClient::xmppStreamError()
 
 QXmppVCardManager& QXmppClient::vCardManager()
 {
-    return *findExtension<QXmppVCardManager>();
+    return *d->vCardManager;
 }
 
 /// Returns the reference to QXmppVersionManager, implementation of XEP-0092.
@@ -479,7 +508,7 @@ QXmppVCardManager& QXmppClient::vCardManager()
 
 QXmppVersionManager& QXmppClient::versionManager()
 {
-    return *findExtension<QXmppVersionManager>();
+    return *d->versionManager;
 }
 
 /// Give extensions a chance to handle incoming stanzas.
@@ -554,6 +583,34 @@ void QXmppClient::_q_streamError(QXmppClient::Error err)
 
     // notify managers
     emit error(err);
+}
+
+QString QXmppClient::_q_sendMessage(const QString& to, const QString& message, const QString& xhtmlMessage,
+    const QStringList& attachments, const QString& attachment)
+{
+    QXmppMessage m("", to, message);
+    m.setXhtml(xhtmlMessage);
+    QList<QXmppMessage::QXmppAmp::QXmppAmpRule> rules;
+    rules.append(QXmppMessage::QXmppAmp::QXmppAmpRule(
+        QXmppMessage::QXmppAmp::QXmppAmpRule::notify,
+        QXmppMessage::QXmppAmp::QXmppAmpRule::deliver,
+        QXmppMessage::QXmppAmp::QXmppAmpRule::stored));
+    rules.append(QXmppMessage::QXmppAmp::QXmppAmpRule(
+        QXmppMessage::QXmppAmp::QXmppAmpRule::notify,
+        QXmppMessage::QXmppAmp::QXmppAmpRule::deliver,
+        QXmppMessage::QXmppAmp::QXmppAmpRule::direct));
+    rules.append(QXmppMessage::QXmppAmp::QXmppAmpRule(
+        QXmppMessage::QXmppAmp::QXmppAmpRule::notify,
+        QXmppMessage::QXmppAmp::QXmppAmpRule::deliver,
+        QXmppMessage::QXmppAmp::QXmppAmpRule::none));
+    QXmppMessage::QXmppAmp amp(rules);
+    m.setAmp(amp);
+    m.setId("chat_" + d->nextId());
+    m.setReceiptRequested(true);
+    m.setAttachments(attachments);
+    m.setAttachment(attachment);
+    sendPacket(m);
+    return m.id();
 }
 
 /// Returns the QXmppLogger associated with the current QXmppClient.
