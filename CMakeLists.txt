@@ -123,11 +123,7 @@ set( headers ${headers} ${cheaders} )
 QT_WRAP_CPP( mocSrc ${headers} )
 set( src ${src} ${mocSrc} )
 
-if ( STATIC_LIBS )
-    add_library( qxmpp STATIC ${src} )
-else( STATIC_LIBS )
-    add_library( qxmpp ${LIBRARY_TYPE} ${src} )
-endif( STATIC_LIBS )
+add_library(qxmpp ${LIBRARY_TYPE} ${src})
 
 qtX_use_modules(qxmpp Core Network Xml)
 
