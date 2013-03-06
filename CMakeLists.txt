@@ -123,7 +123,7 @@ set( headers ${headers} ${cheaders} )
 QT_WRAP_CPP( mocSrc ${headers} )
 set( src ${src} ${mocSrc} )
 
-add_library(qxmpp ${LIBRARY_TYPE} ${src})
+add_library(qxmpp ${src})
 
 qtX_use_modules(qxmpp Core Network Xml)
 
@@ -131,5 +131,9 @@ set( libs ${QT_LIBRARIES} )
 if ( WIN32 )
     set( libs ${libs} dnsapi.lib ws2_32.lib )
 endif ( WIN32 )
-target_link_libraries( qxmpp ${libs} )
+
+if(BUILD_SHARED_LIBS)
+    target_link_libraries( qxmpp ${libs} )
+endif()
+
 set_property( TARGET qxmpp PROPERTY COMPILE_DEFINITIONS QXMPP_BUILD )
