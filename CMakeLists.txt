@@ -134,6 +134,8 @@ endif ( WIN32 )
 
 if(BUILD_SHARED_LIBS)
     target_link_libraries( qxmpp ${libs} )
+else()
+    add_definitions(-DQXMPP_STATIC)
 endif()
 
 set_property( TARGET qxmpp PROPERTY COMPILE_DEFINITIONS QXMPP_BUILD )
