@@ -129,7 +129,7 @@ qtX_use_modules(qxmpp Core Network Xml)
 
 set( libs ${QT_LIBRARIES} )
 if ( WIN32 )
-    set( libs ${libs} dnsapi.lib ws2_32.lib )
+    set( libs ${libs} dnsapi ws2_32)
 endif ( WIN32 )
 
 if(BUILD_SHARED_LIBS)
