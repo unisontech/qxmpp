@@ -1090,6 +1090,7 @@ QXmppStunTransaction::QXmppStunTransaction(const QXmppStunMessage &request, QObj
     m_retryTimer->setSingleShot(true);
     check = connect(m_retryTimer, SIGNAL(timeout()),
                     this, SLOT(retry()));
+    Q_ASSERT(check);
 
     // send packet immediately
     m_tries++;

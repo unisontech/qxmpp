@@ -185,6 +185,7 @@ void QXmppStream::setSocket(QSslSocket *socket)
 
     check = connect(socket, SIGNAL(error(QAbstractSocket::SocketError)),
                     this, SLOT(_q_socketError(QAbstractSocket::SocketError)));
+    Q_ASSERT(check);
 
     check = connect(socket, SIGNAL(readyRead()),
                     this, SLOT(_q_socketReadyRead()));
