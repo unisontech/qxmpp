@@ -33,8 +33,6 @@
 
 // XEP-0079: Advanced Message Processing
 const char* ns_amp = "http://jabber.org/protocol/amp";
-// Unison Extension: Attachments
-const char* ns_attachments = "jabber:info:unison";
 
 static const char* actions_types[] = {
     "alert",
@@ -814,7 +812,7 @@ void QXmppMessage::parse(const QDomElement &element)
     // Unison Extension: Attachments
     d->attachment = element.firstChildElement("attachment").text();
     QDomElement attachmentsElement = element.firstChildElement("attachments");
-    if (!attachmentsElement.isNull() && attachmentsElement.namespaceURI() == ns_attachments)
+    if (!attachmentsElement.isNull() && attachmentsElement.namespaceURI() == ns_unison)
     {
         QDomElement attachmentElement = attachmentsElement.firstChildElement("attachment");
         while (!attachmentElement.isNull())
@@ -998,7 +996,7 @@ void QXmppMessage::toXml(QXmlStreamWriter *xmlWriter) const
     if (d->attachments.count())
     {
         xmlWriter->writeStartElement("attachments");
-        xmlWriter->writeAttribute("xmlns", ns_attachments);
+        xmlWriter->writeAttribute("xmlns", ns_unison);
         Q_FOREACH(const QString &id, d->attachments)
         {
             if (!id.isEmpty()) {

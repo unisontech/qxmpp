@@ -115,5 +115,7 @@ extern const char* ns_attention;
 extern const char* ns_bob;
 // XEP-0249: Direct MUC Invitations
 extern const char* ns_conference;
+// Unison Extension: attachments and presences
+extern const char* ns_unison;
 
 #endif // QXMPPCONSTANTS_H
