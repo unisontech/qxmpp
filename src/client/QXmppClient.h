@@ -40,7 +40,6 @@ class QXmppStream;
 
 // managers
 class QXmppDiscoveryIq;
-class QXmppRosterManager;
 class QXmppVCardManager;
 class QXmppVersionManager;
 
@@ -67,7 +66,6 @@ class QXmppVersionManager;
 /// particular instansiated and enabled manager.
 ///
 /// List of managers enabled by default:
-/// - QXmppRosterManager
 /// - QXmppVCardManager
 /// - QXmppVersionManager
 /// - QXmppDiscoveryManager
@@ -151,7 +149,6 @@ public:
     State state() const;
     QXmppStanza::Error::Condition xmppStreamError();
 
-    QXmppRosterManager& rosterManager();
     QXmppVCardManager& vCardManager();
     QXmppVersionManager& versionManager();
 

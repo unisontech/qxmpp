@@ -33,7 +33,6 @@
 #include "QXmppMessage.h"
 #include "QXmppUtils.h"
 
-#include "QXmppRosterManager.h"
 #include "QXmppVCardManager.h"
 #include "QXmppVersionManager.h"
 #include "QXmppEntityTimeManager.h"
@@ -56,7 +55,6 @@ public:
     QTimer *reconnectionTimer;
 
     // managers
-    QXmppRosterManager *rosterManager;
     QXmppVCardManager *vCardManager;
     QXmppVersionManager *versionManager;
 
@@ -80,7 +78,6 @@ QXmppClientPrivate::QXmppClientPrivate(QXmppClient *qq)
     , receivedConflict(false)
     , reconnectionTries(0)
     , reconnectionTimer(0)
-    , rosterManager(0)
     , vCardManager(0)
     , versionManager(0)
     , id(QUuid::createUuid().toString().mid(1, 8))
@@ -130,7 +127,6 @@ QString QXmppClientPrivate::nextId() const
 /// - QXmppClient
 ///
 /// <B>Managers to perform specific tasks:</B>
-/// - QXmppRosterManager
 /// - QXmppVCardManager
 /// - QXmppTransferManager
 /// - QXmppMucManager
@@ -211,11 +207,6 @@ QXmppClient::QXmppClient(QObject *parent)
 
     // logging
     setLogger(QXmppLogger::getLogger());
-
-    // create managers
-    // TODO move manager references to d->extensions
-    d->rosterManager = new QXmppRosterManager(this);
-    addExtension(d->rosterManager);
 
     d->vCardManager = new QXmppVCardManager;
     addExtension(d->vCardManager);
@@ -376,16 +367,6 @@ bool QXmppClient::isConnected() const
     return d->stream->isConnected();
 }
 
-/// Returns the reference to QXmppRosterManager object of the client.
-/// \return Reference to the roster object of the connected client. Use this to
-/// get the list of friends in the roster and their presence information.
-///
-
-QXmppRosterManager& QXmppClient::rosterManager()
-{
-    return *d->rosterManager;
-}
-
 /// Utility function to send message to all the resources associated with the
 /// specified bareJid. If there are no resources available, that is the contact
 /// is offline or not present in the roster, it will still send a message to
@@ -405,15 +386,8 @@ QStringList QXmppClient::sendMessage(const QString& bareJid, const QString& mess
         xhtml = message;
 
     QStringList stanzas;
-    QStringList resources = rosterManager().getResources(bareJid);
 
-    if(!resources.isEmpty())
-    {
-        for(int i = 0; i < resources.size(); ++i)
-            stanzas.append(_q_sendMessage(QString("%1/%2").arg(bareJid).arg(resources.at(i)), message, xhtml, attachments, attachment));
-    }
-    else
-        stanzas.append(_q_sendMessage(bareJid, message, xhtml, attachments, attachment));
+    stanzas.append(_q_sendMessage(bareJid, message, xhtml, attachments, attachment));
 
     return stanzas;
 }
