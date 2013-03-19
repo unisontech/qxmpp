@@ -21,7 +21,6 @@
  *
  */
 
-
 #include "QXmppPresence.h"
 #include "QXmppUtils.h"
 #include <QtDebug>
@@ -47,6 +46,13 @@ static const char* presence_shows[] = {
     "dnd",
     "chat",
     "invisible"
+};
+
+static const char* presence_info[] = {
+    "",
+    "autoaway",
+    "onphone",
+    "inliveroom"
 };
 
 class QXmppPresencePrivate : public QSharedData
@@ -120,6 +126,17 @@ QXmppPresence &QXmppPresence::operator=(const QXmppPresence &other)
 
 QXmppPresence::AvailableStatusType QXmppPresence::availableStatusType() const
 {
+    QXmppPresence::Status::Info info = d->status.info();
+    if (info) {
+        switch (info) {
+        case QXmppPresence::Status::Autoaway:
+            return QXmppPresence::Autoaway;
+        case QXmppPresence::Status::OnPhone:
+            return QXmppPresence::OnPhone;
+        case QXmppPresence::Status::InLiveRoom:
+            return QXmppPresence::InLiveRoom;
+        }
+    }
     return static_cast<QXmppPresence::AvailableStatusType>(d->status.type());
 }
 
@@ -160,6 +177,36 @@ void QXmppPresence::setStatusText(const QString& statusText)
     d->status.setStatusText(statusText);
 }
 
+bool QXmppPresence::isMobile() const
+{
+    return d->status.isMobile();
+}
+
+void QXmppPresence::setIsMobile(bool isMobile)
+{
+    d->status.setIsMobile(isMobile);
+}
+
+const QDateTime &QXmppPresence::stamp() const
+{
+    return d->status.stamp();
+}
+
+void QXmppPresence::setStamp(const QDateTime& stamp)
+{
+    d->status.setStamp(stamp);
+}
+
+const QString &QXmppPresence::onPhoneWith() const
+{
+    return d->status.onPhoneWith();
+}
+
+void QXmppPresence::setOnPhoneWith(const QString& onPhoneWith)
+{
+    d->status.setOnPhoneWith(onPhoneWith);
+}
+
 /// Returns the presence type.
 ///
 /// You can use this method to determine the action which needs to be
@@ -181,7 +228,7 @@ void QXmppPresence::setType(QXmppPresence::Type type)
     d->type = type;
 }
 
-/// \cond
+/// \cond
 void QXmppPresence::parse(const QDomElement &element)
 {
     QXmppStanza::parse(element);
@@ -200,8 +247,20 @@ void QXmppPresence::parse(const QDomElement &element)
     d->vCardUpdateType = VCardUpdateNone;
     while(!xElement.isNull())
     {
+        if (xElement.tagName() == "info")
+        {
+        }
+        else if (xElement.tagName() == "show")
+        {
+        }
+        else if (xElement.tagName() == "status")
+        {
+        }
+        else if (xElement.tagName() == "error")
+        {
+        }
         // XEP-0045: Multi-User Chat
-        if(xElement.namespaceURI() == ns_muc) {
+        else if(xElement.namespaceURI() == ns_muc) {
             d->mucSupported = true;
             d->mucPassword = xElement.firstChildElement("password").text();
         }
@@ -243,15 +302,6 @@ void QXmppPresence::parse(const QDomElement &element)
             d->capabilityExt = xElement.attribute("ext").split(" ", QString::SkipEmptyParts);
         }
         else if (xElement.tagName() == "addresses")
-        {
-        }
-        else if (xElement.tagName() == "error")
-        {
-        }
-        else if (xElement.tagName() == "show")
-        {
-        }
-        else if (xElement.tagName() == "status")
         {
         }
         else if (xElement.tagName() == "priority")
@@ -495,10 +545,14 @@ void QXmppPresence::setStatus(const QXmppPresence::Status& status)
     d->status = status;
 }
 
-QXmppPresence::Status::Status(QXmppPresence::Status::Type type,
-                             const QString statusText, int priority) :
-                                m_type(type),
-                                m_statusText(statusText), m_priority(priority)
+QXmppPresence::Status::Status()
+    : m_type(QXmppPresence::Status::Online)
+    , m_info(QXmppPresence::Status::NoInfo)
+    , m_statusText()
+    , m_priority(0)
+    , m_isMobile(false)
+    , m_stamp()
+    , m_onPhoneWith()
 {
 }
 
@@ -512,6 +566,16 @@ void QXmppPresence::Status::setType(QXmppPresence::Status::Type type)
     m_type = type;
 }
 
+QXmppPresence::Status::Info QXmppPresence::Status::info() const
+{
+    return m_info;
+}
+
+void QXmppPresence::Status::setInfo(QXmppPresence::Status::Info info)
+{
+    m_info = info;
+}
+
 QString QXmppPresence::Status::statusText() const
 {
     return m_statusText;
@@ -520,6 +584,16 @@ QString QXmppPresence::Status::statusText() const
 void QXmppPresence::Status::setStatusText(const QString& str)
 {
     m_statusText = str;
+}
+
+bool QXmppPresence::Status::isMobile() const
+{
+    return m_isMobile;
+}
+
+void QXmppPresence::Status::setIsMobile(bool isMobile)
+{
+    m_isMobile = isMobile;
 }
 
 int QXmppPresence::Status::priority() const
@@ -532,17 +606,66 @@ void QXmppPresence::Status::setPriority(int priority)
     m_priority = priority;
 }
 
+const QDateTime &QXmppPresence::Status::stamp() const
+{
+    return m_stamp;
+}
+
+void QXmppPresence::Status::setStamp(const QDateTime & stamp)
+{
+    m_stamp = stamp;
+}
+
+const QString &QXmppPresence::Status::onPhoneWith() const
+{
+    return m_onPhoneWith;
+}
+
+void QXmppPresence::Status::setOnPhoneWith(const QString& onPhoneWith)
+{
+    m_onPhoneWith = onPhoneWith;
+}
+
 void QXmppPresence::Status::parse(const QDomElement &element)
 {
+    m_type = QXmppPresence::Status::Online;
     const QString show = element.firstChildElement("show").text();
-    for (int i = Online; i <= Invisible; i++) {
-        if (show == presence_shows[i]) {
-            m_type = static_cast<Type>(i);
-            break;
+    if (!show.isEmpty()) {
+        for (int i = Online; i <= Invisible; i++) {
+            if (show == presence_shows[i]) {
+                m_type = static_cast<Type>(i);
+                break;
+            }
         }
     }
-    m_statusText = element.firstChildElement("status").text();
+
+    m_info = QXmppPresence::Status::NoInfo;
+    const QDomElement xElement = element.firstChildElement("info");
+    if (xElement.namespaceURI() == ns_unison) {
+        const QString info = xElement.text();
+        if (!info.isEmpty()) {
+            for (int i = Autoaway; i <= InLiveRoom; i++) {
+                if (info == presence_info[i]) {
+                    m_info = static_cast<Info>(i);
+                    break;
+                }
+            }
+        }
+        m_isMobile = xElement.attribute("is_mobile") == "true" ? 1 : 0;
+        m_onPhoneWith = xElement.attribute("to");
+    }
+
+    QDomElement statusText = element.firstChildElement("status");
+    if (!statusText.isNull())
+        m_statusText = statusText.text();
+
     m_priority = element.firstChildElement("priority").text().toInt();
+
+    // XEP-0203: Delayed Delivery
+    m_stamp = QDateTime();
+    QDomElement stamp = element.firstChildElement("delay");
+    if (!stamp.isNull() && stamp.namespaceURI() == ns_delayed_delivery)
+        m_stamp = QXmppUtils::datetimeFromString(stamp.attribute("stamp"));
 }
 
 void QXmppPresence::Status::toXml(QXmlStreamWriter *xmlWriter) const
@@ -550,9 +673,28 @@ void QXmppPresence::Status::toXml(QXmlStreamWriter *xmlWriter) const
     const QString show = presence_shows[m_type];
     if (!show.isEmpty())
         helperToXmlAddTextElement(xmlWriter, "show", show);
-    if (!m_statusText.isEmpty())
+
+    const QString info = presence_info[m_info];
+    if (!info.isEmpty() || m_isMobile) {
+        xmlWriter->writeStartElement(ns_unison, "info");
+        if (m_isMobile)
+            xmlWriter->writeAttribute("is_mobile", "true");
+        if (!m_onPhoneWith.isEmpty())
+            xmlWriter->writeAttribute("to", m_onPhoneWith);
+        xmlWriter->writeEmptyElement(info);
+        xmlWriter->writeEndElement();
+    }
+
+    if (!m_statusText.isNull())
         helperToXmlAddTextElement(xmlWriter, "status", m_statusText);
+
     if (m_priority != 0)
         helperToXmlAddTextElement(xmlWriter, "priority", QString::number(m_priority));
+
+    if (m_stamp.isValid()) {
+        xmlWriter->writeStartElement(ns_delayed_delivery, "info");
+        xmlWriter->writeAttribute("stamp", m_stamp.toString(Qt::ISODate));
+        xmlWriter->writeEndElement();
+    }
 }
 /// \endcond

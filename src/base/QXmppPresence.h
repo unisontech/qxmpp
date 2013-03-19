@@ -28,6 +28,8 @@
 #include "QXmppStanza.h"
 #include "QXmppMucIq.h"
 
+#include <QDateTime>
+
 class QXmppPresencePrivate;
 
 /// \brief The QXmppPresence class represents an XMPP presence stanza.
@@ -52,12 +54,15 @@ public:
     /// This enum is used to describe an availability status.
     enum AvailableStatusType
     {
-        Online = 0,      ///< The entity or resource is online.
+        Online = 0,     ///< The entity or resource is online.
         Away,           ///< The entity or resource is temporarily away.
         XA,             ///< The entity or resource is away for an extended period.
         DND,            ///< The entity or resource is busy ("Do Not Disturb").
         Chat,           ///< The entity or resource is actively interested in chatting.
-        Invisible       ///< obsolete XEP-0018: Invisible Presence
+        Invisible,      ///< obsolete XEP-0018: Invisible Presence
+        Autoaway,       ///< Unison extension: The entity or resource is in away by timeout
+        OnPhone,        ///< Unison extension: The entity or resource is calling to someone by phone
+        InLiveRoom      ///< Unison extension: The entity or resource is in conference
     };
 
     /// This enum is used to describe vCard updates as defined by
@@ -89,25 +94,48 @@ public:
             Invisible    ///< obsolete XEP-0018: Invisible Presence
         };
 
-        Status(QXmppPresence::Status::Type type = QXmppPresence::Status::Online,
-            const QString statusText = "", int priority = 0);
+        enum Info
+        {
+            NoInfo,
+            Autoaway,    ///< Unison extension: The entity or resource is in away by timeout
+            OnPhone,     ///< Unison extension: The entity or resource is calling to someone by phone
+            InLiveRoom   ///< Unison extension: The entity or resource is in conference
+        };
+
+        explicit Status();
 
         QXmppPresence::Status::Type type() const;
         void setType(QXmppPresence::Status::Type);
 
+        QXmppPresence::Status::Info info() const;
+        void setInfo(QXmppPresence::Status::Info);
+
         QString statusText() const;
         void setStatusText(const QString&);
 
+        bool isMobile() const;
+        void setIsMobile(bool);
+
         int priority() const;
         void setPriority(int);
+
+        const QDateTime& stamp() const;
+        void setStamp(const QDateTime&);
+
+        const QString& onPhoneWith() const;
+        void setOnPhoneWith(const QString&);
 
         void parse(const QDomElement &element);
         void toXml(QXmlStreamWriter *writer) const;
 
     private:
         QXmppPresence::Status::Type m_type;
+        QXmppPresence::Status::Info m_info; ///< Unison extension: extern info
         QString m_statusText;
         int m_priority;
+        bool m_isMobile;                    ///< Unison extension: The entity or resource is on mobile platform
+        QDateTime m_stamp;                  ///< XEP-0203: Delayed Delivery
+        QString m_onPhoneWith;              ///< Unison extension:
     };
 
     QXmppPresence::Status Q_DECL_DEPRECATED &status();
@@ -132,6 +160,15 @@ public:
 
     QString statusText() const;
     void setStatusText(const QString& statusText);
+
+    bool isMobile() const;
+    void setIsMobile(bool);
+
+    const QDateTime& stamp() const;
+    void setStamp(const QDateTime&);
+
+    const QString& onPhoneWith() const;
+    void setOnPhoneWith(const QString&);
 
     /// \cond
     void parse(const QDomElement &element);
