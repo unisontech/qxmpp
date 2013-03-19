@@ -135,6 +135,8 @@ QXmppPresence::AvailableStatusType QXmppPresence::availableStatusType() const
             return QXmppPresence::OnPhone;
         case QXmppPresence::Status::InLiveRoom:
             return QXmppPresence::InLiveRoom;
+        default:
+            break;
         }
     }
     return static_cast<QXmppPresence::AvailableStatusType>(d->status.type());
