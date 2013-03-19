@@ -24,6 +24,7 @@
 #include <QSslSocket>
 #include <QTimer>
 #include <QUuid>
+#include <QElapsedTimer>
 
 #include "QXmppClient.h"
 #include "QXmppClientExtension.h"
@@ -38,6 +39,7 @@
 #include "QXmppEntityTimeManager.h"
 #include "QXmppDiscoveryManager.h"
 #include "QXmppDiscoveryIq.h"
+#include "QXmppEntityTimeIq.h"
 
 class QXmppClientPrivate
 {
@@ -57,6 +59,7 @@ public:
     // managers
     QXmppVCardManager *vCardManager;
     QXmppVersionManager *versionManager;
+    QXmppEntityTimeManager *timeManager;
 
     void addProperCapability(QXmppPresence& presence);
     int getNextReconnectTime() const;
@@ -64,6 +67,10 @@ public:
     QString nextId() const;
     static unsigned long long lastId;
     QString id;
+
+    QDateTime serverTime;
+    QElapsedTimer elapsedTime;
+    QTimer timeRequestTimer;
 
 private:
     QXmppClient *q;
@@ -80,6 +87,7 @@ QXmppClientPrivate::QXmppClientPrivate(QXmppClient *qq)
     , reconnectionTimer(0)
     , vCardManager(0)
     , versionManager(0)
+    , timeManager(0)
     , id(QUuid::createUuid().toString().mid(1, 8))
     , q(qq)
 {
@@ -214,7 +222,8 @@ QXmppClient::QXmppClient(QObject *parent)
     d->versionManager = new QXmppVersionManager;
     addExtension(d->versionManager);
 
-    addExtension(new QXmppEntityTimeManager());
+    _q_timeManagerInit();
+
     addExtension(new QXmppDiscoveryManager());
 }
 
@@ -485,6 +494,11 @@ QXmppVersionManager& QXmppClient::versionManager()
     return *d->versionManager;
 }
 
+const QDateTime QXmppClient::currentServerTime() const
+{
+    return d->serverTime.addMSecs(d->elapsedTime.elapsed());
+}
+
 /// Give extensions a chance to handle incoming stanzas.
 ///
 /// \param element
@@ -527,6 +541,8 @@ void QXmppClient::_q_streamConnected()
     emit connected();
     emit stateChanged(QXmppClient::ConnectedState);
 
+    _q_serverTimeRequest();
+
     // send initial presence
     if (d->stream->isAuthenticated())
         sendPacket(d->clientPresence);
@@ -534,6 +550,8 @@ void QXmppClient::_q_streamConnected()
 
 void QXmppClient::_q_streamDisconnected()
 {
+    _q_serverTimeAbort();
+
     // notify managers
     emit disconnected();
     emit stateChanged(QXmppClient::DisconnectedState);
@@ -557,6 +575,28 @@ void QXmppClient::_q_streamError(QXmppClient::Error err)
 
     // notify managers
     emit error(err);
+}
+
+void QXmppClient::_q_serverTimeReceived(const QXmppEntityTimeIq &time)
+{
+    QDateTime utcTime = time.utc();
+    utcTime.setTimeSpec(Qt::UTC);
+    if (!utcTime.isNull() && utcTime.isValid()) {
+        d->serverTime = utcTime;
+        d->elapsedTime.restart();
+    }
+
+    d->timeRequestTimer.start();
+}
+
+void QXmppClient::_q_serverTimeRequest()
+{
+    d->timeManager->requestTime("u1");
+}
+
+void QXmppClient::_q_serverTimeAbort()
+{
+    d->timeRequestTimer.stop();
 }
 
 QString QXmppClient::_q_sendMessage(const QString& to, const QString& message, const QString& xhtmlMessage,
@@ -585,6 +625,27 @@ QString QXmppClient::_q_sendMessage(const QString& to, const QString& message, c
     m.setAttachment(attachment);
     sendPacket(m);
     return m.id();
+}
+
+void QXmppClient::_q_timeManagerInit()
+{
+    bool check;
+    Q_UNUSED(check);
+
+    d->timeManager = new QXmppEntityTimeManager();
+    addExtension(d->timeManager);
+
+    check = connect(d->timeManager, SIGNAL(timeReceived(QXmppEntityTimeIq)),
+                    this, SLOT(_q_serverTimeReceived(QXmppEntityTimeIq)));
+    Q_ASSERT(check);
+
+    d->serverTime = QDateTime::currentDateTimeUtc();
+    d->elapsedTime.start();
+
+    d->timeRequestTimer.setInterval(60 * 60 * 1000);
+    d->timeRequestTimer.setSingleShot(true);
+    check = QObject::connect(&d->timeRequestTimer, SIGNAL(timeout()), this, SLOT(_q_serverTimeRequest()), Qt::UniqueConnection);
+    Q_ASSERT(check);
 }
 
 /// Returns the QXmppLogger associated with the current QXmppClient.

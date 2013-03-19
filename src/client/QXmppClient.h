@@ -37,6 +37,7 @@ class QXmppPresence;
 class QXmppMessage;
 class QXmppIq;
 class QXmppStream;
+class QXmppEntityTimeIq;
 
 // managers
 class QXmppDiscoveryIq;
@@ -152,6 +153,8 @@ public:
     QXmppVCardManager& vCardManager();
     QXmppVersionManager& versionManager();
 
+    const QDateTime currentServerTime() const;
+
 signals:
 
     /// This signal is emitted when the client connects successfully to the XMPP
@@ -225,10 +228,15 @@ private slots:
     void _q_streamConnected();
     void _q_streamDisconnected();
     void _q_streamError(QXmppClient::Error error);
+    void _q_serverTimeReceived(const QXmppEntityTimeIq&);
+    void _q_serverTimeRequest();
+    void _q_serverTimeAbort();
 
 private:
     QString _q_sendMessage(const QString& to, const QString& message, const QString& xhtmlMessage,
         const QStringList& attachments, const QString& attachment);
+
+    void _q_timeManagerInit();
 
     QXmppClientPrivate * const d;
 };
