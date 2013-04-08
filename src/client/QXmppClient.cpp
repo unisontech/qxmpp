@@ -587,7 +587,7 @@ void QXmppClient::_q_serverTimeReceived(const QXmppEntityTimeIq &time)
 
 void QXmppClient::_q_serverTimeRequest()
 {
-    d->timeManager->requestTime("u1");
+    d->timeManager->requestTime(d->stream->configuration().domain());
 }
 
 void QXmppClient::_q_serverTimeAbort()
