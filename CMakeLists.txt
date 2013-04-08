@@ -45,7 +45,8 @@ set( src ./src/base/QXmppArchiveIq.cpp
          ./src/base/QXmppStun.cpp
          ./src/base/QXmppUtils.cpp
          ./src/base/QXmppVCardIq.cpp
-         ./src/base/QXmppVersionIq.cpp )
+         ./src/base/QXmppVersionIq.cpp
+         ./src/base/QXmppLastActivityIq.cpp )
 
 if(QT4_FOUND)
     set( src ${src}
@@ -108,7 +109,8 @@ set( headers ./src/base/QXmppArchiveIq.h
              ./src/base/QXmppVCardIq.h
              ./src/base/QXmppVersionIq.h
              ./src/base/QXmppCodec_p.h
-             ./src/base/QXmppSasl_p.h )
+             ./src/base/QXmppSasl_p.h
+             ./src/base/QXmppLastActivityIq.cpp )
 
 if(QT4_FOUND)
     set( headers ${headers}
