@@ -209,6 +209,16 @@ void QXmppPresence::setOnPhoneWith(const QString& onPhoneWith)
     d->status.setOnPhoneWith(onPhoneWith);
 }
 
+const QString &QXmppPresence::inLiveRoom() const
+{
+    return d->status.inLiveRoom();
+}
+
+void QXmppPresence::setInLiveRoom(const QString& inLiveRoom)
+{
+    d->status.setInLiveRoom(inLiveRoom);
+}
+
 /// Returns the presence type.
 ///
 /// You can use this method to determine the action which needs to be
@@ -555,6 +565,7 @@ QXmppPresence::Status::Status()
     , m_isMobile(false)
     , m_stamp()
     , m_onPhoneWith()
+    , m_inLiveRoom()
 {
 }
 
@@ -628,6 +639,16 @@ void QXmppPresence::Status::setOnPhoneWith(const QString& onPhoneWith)
     m_onPhoneWith = onPhoneWith;
 }
 
+const QString &QXmppPresence::Status::inLiveRoom() const
+{
+    return m_inLiveRoom;
+}
+
+void QXmppPresence::Status::setInLiveRoom(const QString& inLiveRoom)
+{
+    m_inLiveRoom = inLiveRoom;
+}
+
 void QXmppPresence::Status::parse(const QDomElement &element)
 {
     m_type = QXmppPresence::Status::Online;
@@ -654,7 +675,10 @@ void QXmppPresence::Status::parse(const QDomElement &element)
             }
         }
         m_isMobile = xElement.attribute("is_mobile") == "true" ? 1 : 0;
-        m_onPhoneWith = xElement.attribute("to");
+        if (m_info == QXmppPresence::Status::InLiveRoom)
+            m_inLiveRoom = xElement.attribute("to");
+        else if (m_info == QXmppPresence::Status::OnPhone)
+            m_onPhoneWith = xElement.attribute("to");
     }
 
     QDomElement statusText = element.firstChildElement("status");

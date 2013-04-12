@@ -125,6 +125,9 @@ public:
         const QString& onPhoneWith() const;
         void setOnPhoneWith(const QString&);
 
+        const QString& inLiveRoom() const;
+        void setInLiveRoom(const QString&);
+
         void parse(const QDomElement &element);
         void toXml(QXmlStreamWriter *writer) const;
 
@@ -136,6 +139,7 @@ public:
         bool m_isMobile;                    ///< Unison extension: The entity or resource is on mobile platform
         QDateTime m_stamp;                  ///< XEP-0203: Delayed Delivery
         QString m_onPhoneWith;              ///< Unison extension:
+        QString m_inLiveRoom;               ///< Unison extension:
     };
 
     QXmppPresence::Status Q_DECL_DEPRECATED &status();
@@ -169,6 +173,9 @@ public:
 
     const QString& onPhoneWith() const;
     void setOnPhoneWith(const QString&);
+
+    const QString& inLiveRoom() const;
+    void setInLiveRoom(const QString&);
 
     /// \cond
     void parse(const QDomElement &element);
