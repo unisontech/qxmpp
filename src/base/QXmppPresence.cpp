@@ -146,7 +146,22 @@ QXmppPresence::AvailableStatusType QXmppPresence::availableStatusType() const
 
 void QXmppPresence::setAvailableStatusType(AvailableStatusType type)
 {
-    d->status.setType(static_cast<QXmppPresence::Status::Type>(type));
+    switch (type) {
+    case Autoaway:
+        d->status.setType(QXmppPresence::Status::Away);
+        d->status.setInfo(QXmppPresence::Status::Autoaway);
+        break;
+    case OnPhone:
+        d->status.setType(QXmppPresence::Status::DND);
+        d->status.setInfo(QXmppPresence::Status::OnPhone);
+        break;
+    case InLiveRoom:
+        d->status.setType(QXmppPresence::Status::DND);
+        d->status.setInfo(QXmppPresence::Status::InLiveRoom);
+        break;
+    default:
+        d->status.setType(static_cast<QXmppPresence::Status::Type>(type));
+    }
 }
 
 /// Returns the priority level of the resource.
@@ -702,12 +717,15 @@ void QXmppPresence::Status::toXml(QXmlStreamWriter *xmlWriter) const
 
     const QString info = presence_info[m_info];
     if (!info.isEmpty() || m_isMobile) {
-        xmlWriter->writeStartElement(ns_unison, "info");
+        xmlWriter->writeStartElement("info");
+        xmlWriter->writeAttribute("xmlns", ns_unison);
         if (m_isMobile)
             xmlWriter->writeAttribute("is_mobile", "true");
         if (!m_onPhoneWith.isEmpty())
             xmlWriter->writeAttribute("to", m_onPhoneWith);
-        xmlWriter->writeEmptyElement(info);
+        else if (!m_inLiveRoom.isEmpty())
+            xmlWriter->writeAttribute("to", m_inLiveRoom);
+        xmlWriter->writeCharacters(info);
         xmlWriter->writeEndElement();
     }
 
